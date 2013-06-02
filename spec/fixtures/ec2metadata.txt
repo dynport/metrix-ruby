@@ -1,0 +1,25 @@
+ami-id: ami-12345
+ami-launch-index: 0
+ami-manifest-path: (unknown)
+ancestor-ami-ids: unavailable
+availability-zone: eu-west-1a
+block-device-mapping: ami
+ephemeral0
+root
+swap
+instance-action: none
+instance-id: i-252535
+instance-type: m1.small
+local-hostname: ip-1-2-3-4.eu-west-1.compute.internal
+local-ipv4: 1.2.3.4
+kernel-id: aki-71665e05
+mac: unavailable
+profile: default-paravirtual
+product-codes: unavailable
+public-hostname: ec2-2-4-6-8.eu-west-1.compute.amazonaws.com
+public-ipv4: 2.4.6.8
+public-keys: ['some.ssh.key']
+ramdisk-id: unavailable
+reserveration-id: unavailable
+security-groups: default
+user-data: unavailable

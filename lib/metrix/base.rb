@@ -1,49 +1,42 @@
 require "net/http"
 require "json"
+require "metrix/metric"
 
-class Base
-  attr_reader :attributes
+module Metrix
+  class Base
+    attr_reader :attributes, :time
 
-  class << self
-    def from_json(json)
-      self.new(JSON.load(json))
-    end
-
-    def from_uri(uri)
-      from_json(Net::HTTP.get(URI(uri)))
-    end
-
-    def ignore_metrics(*metrics)
-      @ignore = [metrics].flatten
-    end
-
-    def ignore
-      @ignore ||= []
-    end
-  end
-
-  def initialize(attributes)
-    @attributes = attributes
-  end
-
-  def metrics
-    map_attributes(attributes).reject { |k, v| self.class.ignore.include?(k) }
-  end
-
-  def map_attributes(attributes, prefix = nil)
-    attributes.inject({}) do |hash, (k, v)|
-      path = [prefix, k].compact.join(".")
-      case v
-      when Hash
-        hash.merge!(map_attributes(v, path))
-      when Array
-        v.each_with_index do |array_value, i|
-          hash.merge!(map_attributes(v, "#{path}i"))
-        end
-      when Numeric
-        hash[path] = v
+    class << self
+      def ignore_metrics(*metrics)
+        @ignore = [metrics].flatten
       end
-      hash
+
+      def ignore
+        @ignore ||= []
+      end
+    end
+
+    def initialize(raw, time = Time.now)
+      @raw = raw
+      @time = time
+    end
+
+    def metrics
+      unfiltered_metrics.reject { |k, v| ignore_metric?(k) }.map do |k, v|
+        Metric.new("#{prefix}.#{k}", v, @time, tags)
+      end
+    end
+
+    def tags
+      {}
+    end
+
+    def ignore_metric?(metric)
+      self.class.ignore.include?(metric)
+    end
+
+    def unfiltered_metrics
+      extract(attributes)
     end
   end
 end

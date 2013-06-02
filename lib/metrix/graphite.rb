@@ -1,41 +1,42 @@
 require "socket"
+require "metrix"
 
-class Graphite
-  def initialize(host, port = 2003)
-    @host = host
-    @port = port
-  end
+module Metrix
+  class Graphite
+    attr_reader :host, :port
 
-  def <<(m)
-    metrics << m
-    flush if metrics.count > 90
-  end
-
-  def flush
-    if metrics.empty?
-      logger.info "nothing to send"
-      return
+    def initialize(host, port = 2003)
+      @host = host
+      @port = port
     end
-    started = Time.now
-    Socket.tcp(@host, @port) do |socket|
-      metrics.each do |m|
-        logger.debug "sending #{m}"
-        socket.puts "metrix.#{hostname}.#{m}"
+
+    def <<(metric)
+      metric.metrics.each do |m|
+        logger.debug "adding #{m.to_graphite}"
+        buffers << m.to_graphite
+        flush if buffers.count > 90
       end
     end
-    logger.info "sent #{metrics.count} in %.06fs" % [Time.now - started]
-    metrics.clear
-  end
 
-  def hostname
-    @hostname ||= `hostname`.strip
-  end
+    def buffers
+      @buffers ||= []
+    end
 
-  def metrics
-    @metrics ||= []
-  end
+    def flush
+      if buffers.empty?
+        logger.info "nothing to send"
+        return
+      end
+      started = Time.now
+      Socket.tcp(@host, @port) do |socket|
+        socket.puts(buffers.join("\n"))
+      end
+      logger.info "sent #{buffers.count} in %.06fs" % [Time.now - started]
+      buffers.clear
+    end
 
-  def logger
-    Metrix.logger
+    def logger
+      Metrix.logger
+    end
   end
 end

@@ -9,5 +9,9 @@ module Metrix
       require "logger"
       @logger ||= Logger.new(STDOUT)
     end
+
+    def hostname
+      @hostname ||= `hostname`.strip
+    end
   end
 end

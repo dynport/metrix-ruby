@@ -1,7 +1,11 @@
-require "metrix/base"
+require "metrix/json"
 
 module Metrix
-  class ElasticSearch < Base
+  class ElasticSearch < Json
     ignore_metrics []
+
+    def prefix
+      "elasticsearch"
+    end
   end
 end
