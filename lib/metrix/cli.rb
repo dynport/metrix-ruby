@@ -109,6 +109,11 @@ module Metrix
     def opts
       require "optparse"
       @opts ||= OptionParser.new do |o|
+        o.on("-v", "--version") do
+          puts "metrix #{Metrix::VERSION}"
+          exit
+        end
+
         o.on("--nginx") do
           @nginx = true
         end
