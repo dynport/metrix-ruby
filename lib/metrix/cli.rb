@@ -50,8 +50,12 @@ module Metrix
           Metrix.logger.error "#{err.backtrace.inspect}"
         ensure
           sleep_for = @interval - (Time.now - started - cnt * interval)
-          Metrix.logger.info "finished run in %.06f, sleeping for %.06f" % [Time.now - now, sleep_for]
-          sleep sleep_for
+          if sleep_for > 0
+            Metrix.logger.info "finished run in %.06f, sleeping for %.06f" % [Time.now - now, sleep_for]
+            sleep sleep_for
+          else
+            Metrix.logger.info "not sleeping because %.06f is negative" % [sleep_for]
+          end
         end
       end
     end
