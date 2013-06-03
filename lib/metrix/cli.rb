@@ -31,17 +31,38 @@ module Metrix
         begin
           cnt += 1
           now = Time.now.utc
-          reporter << Metrix::ElasticSearch.new(elastic_search_status)  if elastic_search?
-          reporter << Metrix::Mongodb.new(mongodb_status)               if mongodb?
-          reporter << Metrix::Nginx.new(nginx_status)                   if nginx?
+          if elastic_search?
+            fetch_metrix :elastic_search do
+              reporter << Metrix::ElasticSearch.new(elastic_search_status)
+            end
+          end
+
+          if mongodb?
+            fetch_metrix :mongodb do
+              reporter << Metrix::Mongodb.new(mongodb_status)
+            end
+          end
+
+          if nginx?
+            fetch_metrix :nginx do
+              reporter << Metrix::Nginx.new(nginx_status)
+            end
+          end
+
           if system?
-            reporter << Metrix::System.new(File.read("/proc/stat"))
-            reporter << Metrix::Load.new(File.read("/proc/loadavg"))
+            fetch_metrix :system do
+              reporter << Metrix::System.new(File.read("/proc/stat"))
+            end
+            fetch_metrix :load do
+              reporter << Metrix::Load.new(File.read("/proc/loadavg"))
+            end
           end
 
           if processes?
-            Metrix::Process.all.each do |m|
-              reporter << m
+            fetch_metrix :processes do
+              Metrix::Process.all.each do |m|
+                reporter << m
+              end
             end
           end
           reporter.flush
@@ -83,18 +104,37 @@ module Metrix
     end
 
     def elastic_search_status
-      Metrix.logger.info "fetching elasticsearch metrix"
-      Net::HTTP.get(URI("http://127.0.0.1:9200/_status"))
+      get_url "http://127.0.0.1:9200/_status"
     end
 
     def mongodb_status
-      Metrix.logger.info "fetching mongodb metrix"
-      Net::HTTP.get(URI("http://127.0.0.1:28017/serverStatus"))
+      get_url "http://127.0.0.1:28017/serverStatus"
     end
 
     def nginx_status
       Metrix.logger.info "fetching mongodb metrix"
-      Net::HTTP.get(URI("http://127.0.0.1:8000/"))
+      get_url "http://127.0.0.1:8000/"
+    end
+
+    def get_url(url)
+      logger.info "fetching URL #{url}"
+      started = Time.now
+      body = Net::HTTP.get(URI(url))
+      logger.info "fetched URL #{url} in %.06f" % [Time.now - started]
+      body
+    end
+
+    def fetch_metrix(type)
+      started = Time.now
+      logger.info "fetching metrix for #{type}"
+      yield
+      logger.info "fetched metrix for type #{type} in %.06f" % [Time.now - started]
+    rescue => err
+      logger.error "#{err.message} #{err.backtrace.inspect}"
+    end
+
+    def logger
+      Metrix.logger
     end
 
     def system?
