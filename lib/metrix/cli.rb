@@ -1,6 +1,7 @@
 require "metrix"
 require "metrix/elastic_search"
 require "metrix/mongodb"
+require "metrix/nginx"
 require "metrix/system"
 require "metrix/load"
 require "logger"
@@ -32,6 +33,7 @@ module Metrix
           now = Time.now.utc
           reporter << Metrix::ElasticSearch.new(elastic_search_status)  if elastic_search?
           reporter << Metrix::Mongodb.new(mongodb_status)               if mongodb?
+          reporter << Metrix::Nginx.new(nginx_status)                   if nginx?
           if system?
             reporter << Metrix::System.new(File.read("/proc/stat"))
             reporter << Metrix::Load.new(File.read("/proc/loadavg"))
@@ -76,6 +78,10 @@ module Metrix
       !!@mongodb
     end
 
+    def nginx?
+      !!@nginx
+    end
+
     def elastic_search_status
       Metrix.logger.info "fetching elasticsearch metrix"
       Net::HTTP.get(URI("http://127.0.0.1:9200/_status"))
@@ -84,6 +90,11 @@ module Metrix
     def mongodb_status
       Metrix.logger.info "fetching mongodb metrix"
       Net::HTTP.get(URI("http://127.0.0.1:28017/serverStatus"))
+    end
+
+    def nginx_status
+      Metrix.logger.info "fetching mongodb metrix"
+      Net::HTTP.get(URI("http://127.0.0.1:8000/"))
     end
 
     def system?
@@ -98,6 +109,10 @@ module Metrix
     def opts
       require "optparse"
       @opts ||= OptionParser.new do |o|
+        o.on("--nginx") do
+          @nginx = true
+        end
+
         o.on("--mongodb") do
           @mongodb = true
         end
