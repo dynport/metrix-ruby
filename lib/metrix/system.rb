@@ -64,9 +64,5 @@ module Metrix
     def cpu
       Cpu.new(@raw[/^cpu (.*)/, 1].split(" ").map(&:to_i))
     end
-
-    def cast_int(value)
-      value.to_i if value
-    end
   end
 end

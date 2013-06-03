@@ -38,5 +38,9 @@ module Metrix
     def unfiltered_metrics
       extract(attributes)
     end
+
+    def cast_int(value)
+      value.to_i if value
+    end
   end
 end
