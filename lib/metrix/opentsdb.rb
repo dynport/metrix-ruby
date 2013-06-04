@@ -2,6 +2,8 @@ require "socket"
 
 module Metrix
   class OpenTSDB
+    attr_reader :host, :port
+
     def initialize(host, port = 4242)
       @host = host
       @port = port
