@@ -6,6 +6,7 @@ require "metrix/system"
 require "metrix/load"
 require "metrix/fpm"
 require "logger"
+require "fileutils"
 
 module Metrix
   class CLI
@@ -20,15 +21,58 @@ module Metrix
     end
 
     def run
-      opts.parse(@args)
       Metrix.logger.level = log_level
+      action = opts.parse(@args).first
+      case action
+      when "start"
+        if running?
+          logger.warn "refuse to run. seems that #{pid_path} exists!"
+          abort "not allowed to run" if running?
+        end
+        pid = Process.fork do
+          start
+        end
+        sleep 1
+        Process.detach(pid)
+      when "status"
+        if File.exists?(pid_path)
+          logger.debug "#{pid_path} exists"
+          puts "STATUS: running with pid #{File.read(pid_path).strip}"
+        else
+          logger.debug "#{pid_path} does not exist"
+          puts "STATUS: not running"
+        end
+      when "stop"
+        abort "not running!" if !running?
+        pid = File.read(pid_path).strip
+        logger.info "killing pid #{pid}"
+        system "kill #{pid}"
+        puts "killed #{pid}"
+      else
+        logger.warn "action #{action} unknown!"
+        abort "action #{action} unknown!"
+      end
+    end
+
+    def delete_pidfile!
+      logger.info "deleteing pidfile #{pid_path}"
+      FileUtils.rm_f(pid_path)
+    end
+
+    def start
       if self.reporter.nil?
         puts "ERROR: at least one reporter must be specified"
         abort opts.to_s
       end
+      Signal.trap("TERM") do
+        logger.info "terminating..."
+        $running = false
+      end
+      $running = true
       cnt = -1
       started = Time.now
-      while true
+      write_pidfile!(Process.pid)
+      while $running
         begin
           cnt += 1
           now = Time.now.utc
@@ -74,7 +118,7 @@ module Metrix
           end
           reporter.flush
         rescue SystemExit
-          exit
+          $running = false
         rescue => err
           Metrix.logger.error "#{err.message}"
           Metrix.logger.error "#{err.backtrace.inspect}"
@@ -88,6 +132,24 @@ module Metrix
           end
         end
       end
+      delete_pidfile!
+    end
+
+    def write_pidfile!(pid)
+      logger.info "writing #{pid} to #{pid_path}"
+      File.open(pid_path, "w") { |f| f.print(pid) }
+    end
+
+    def allowed_to_run?
+      !running?
+    end
+
+    def pid_path
+      "/var/run/metrix.pid"
+    end
+
+    def running?
+      File.exists?(pid_path)
     end
 
     def log_level
@@ -197,7 +259,6 @@ module Metrix
         o.on("--stdout") do
           require "metrix/reporter/stdout"
           @reporter = Metrix::Reporter::Stdout.new
-          log_to_stdout
         end
 
         o.on("--debug") do
