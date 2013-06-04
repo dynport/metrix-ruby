@@ -2,6 +2,9 @@ require "metrix/base"
 
 module Metrix
   class Load < Base
+    set_prefix "system.load"
+    set_known_metrics %w(load1 load5 load15)
+
     def initialize(data)
       @data = data
       @time = Time.now

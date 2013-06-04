@@ -2,6 +2,13 @@ require "metrix/base"
 
 module Metrix
   class FPM < Base
+    set_prefix "fpm"
+    set_known_metrics %w(
+      accepted_conn start_since accepted_conn listen_queue max_listen_queue
+      listen_queue_len idle_processes active_processes total_processes max_active_processes
+      max_children_reached slow_requests
+    )
+
     def initialize(data)
       @data = data
       @time = Time.now

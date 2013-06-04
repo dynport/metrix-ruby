@@ -20,5 +20,7 @@ def hash_metrics(metrics)
   end
 end
 
+require "metrix/process"
+
 require "pathname"
 FIXTURES_PATH = Pathname.new(File.expand_path("../fixtures", __FILE__))

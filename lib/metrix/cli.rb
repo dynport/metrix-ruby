@@ -32,9 +32,9 @@ module Metrix
 
     def run
       parse!
-      load_configs_from_file!
       case @action
       when "start"
+        load_configs_from_file!
         if running?
           logger.warn "refuse to run. seems that #{pid_path} exists!"
           abort "not allowed to run" if running?
@@ -65,7 +65,10 @@ module Metrix
         system "kill #{pid}"
         puts "killed #{pid}"
       when "configtest"
+        load_configs_from_file!
         puts "running configtest #{attributes.inspect}"
+      when "list_metrics"
+        puts Metrix.known_metrics.join("\n")
       else
         logger.warn "action #{action} unknown!"
         abort "action #{action} unknown!"

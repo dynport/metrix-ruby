@@ -11,8 +11,32 @@ module Metrix
         @ignore = [metrics].flatten
       end
 
+      def inherited(clazz)
+        subclasses << clazz
+      end
+
+      def set_prefix(prefix)
+        @prefix = prefix
+      end
+
+      def prefix
+        @prefix
+      end
+
+      def subclasses
+        @subclasses ||= []
+      end
+
       def ignore
         @ignore ||= []
+      end
+
+      def set_known_metrics(*metrics)
+        @known_metrics = metrics.flatten
+      end
+
+      def known_metrics
+        @known_metrics
       end
     end
 
@@ -24,7 +48,15 @@ module Metrix
     def metrics
       unfiltered_metrics.reject { |k, v| ignore_metric?(k) }.map do |k, v|
         Metric.new("#{prefix}.#{k}", v, @time, tags)
-      end
+      end + tagged_metrics
+    end
+
+    def tagged_metrics
+      []
+    end
+
+    def prefix
+      self.class.prefix
     end
 
     def tags

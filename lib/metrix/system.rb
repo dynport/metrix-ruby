@@ -2,6 +2,12 @@ require "metrix/base"
 
 module Metrix
   class System < Base
+    set_prefix "system"
+    set_known_metrics %w(
+      processes procs_running procs_blocked ctxt cpu.user cpu.nice cpu.system cpu.idle
+      cpu.iowait cpu.irq cpu.softirq 
+    )
+
     class Cpu
       def initialize(values)
         @values = values
@@ -47,10 +53,6 @@ module Metrix
         "cpu.irq"         => cpu.irq,
         "cpu.softirq"     => cpu.softirq,
       }
-    end
-
-    def prefix
-      "system"
     end
 
     def cpu

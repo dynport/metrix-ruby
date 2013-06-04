@@ -2,6 +2,9 @@ require "metrix/base"
 
 module Metrix
   class Nginx < Base
+    set_prefix "nginx"
+    set_known_metrics %w(accepts handled requests active_connections reading writing waiting)
+
     def initialize(data)
       @data = data
       @time = Time.now
@@ -15,10 +18,6 @@ module Metrix
       define_method(name) do
         numbers[name]
       end
-    end
-
-    def prefix
-      "nginx"
     end
 
     def extract(data = nil)

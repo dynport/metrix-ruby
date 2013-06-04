@@ -1,7 +1,7 @@
 require "metrix/base"
 
 module Metrix
-  class Json < Base
+  module JsonMetric
     def attributes
       @attributes ||= JSON.load(@raw)
     end

@@ -3,6 +3,10 @@ require "metrix/base"
 module Metrix
   class ProcessMetric < Base
     attr_reader :time
+    set_known_metrics %w(minflt cminflt majflt cmajflt utime stime cutime sctime num_threads
+      vsize rss
+    )
+    set_prefix "system.process"
 
     class << self
       def all
@@ -44,10 +48,6 @@ module Metrix
         vsize: vsize,
         rss: rss,
       }
-    end
-
-    def prefix
-      "system.process"
     end
 
     def cast_int(str)
