@@ -49,14 +49,6 @@ module Metrix
       }
     end
 
-    def load1
-      loadavg.split(" ").first.to_f
-    end
-
-    def loadavg
-      @loadavg ||= File.read("/proc/loadavg")
-    end
-
     def prefix
       "system"
     end
