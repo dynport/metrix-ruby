@@ -4,6 +4,7 @@ require "metrix/mongodb"
 require "metrix/nginx"
 require "metrix/system"
 require "metrix/load"
+require "metrix/memory"
 require "metrix/fpm"
 require "metrix/process_metric"
 require "metrix/load"
@@ -98,12 +99,13 @@ module Metrix
         begin
           cnt += 1
           now = Time.now.utc
-          fetch_metrix(:elasticsearch) { reporter << Metrix::ElasticSearch.new(fetch_resource(:elasticsearch)) }
-          fetch_metrix(:mongodb)       { reporter << Metrix::Mongodb.new(fetch_resource(:mongodb)) }
-          fetch_metrix(:nginx)         { reporter << Metrix::Nginx.new(fetch_resource(:nginx)) }
-          fetch_metrix(:fpm)           { reporter << Metrix::FPM.new(fetch_resource(:fpm)) }
-          fetch_metrix(:system)        { reporter << Metrix::System.new(File.read("/proc/stat")) }
-          fetch_metrix(:load)          { reporter << Metrix::Load.new(File.read("/proc/loadavg")) }
+          fetch_metrix(:elasticsearch)  { reporter << Metrix::ElasticSearch.new(fetch_resource(:elasticsearch)) }
+          fetch_metrix(:mongodb)        { reporter << Metrix::Mongodb.new(fetch_resource(:mongodb)) }
+          fetch_metrix(:nginx)          { reporter << Metrix::Nginx.new(fetch_resource(:nginx)) }
+          fetch_metrix(:fpm)            { reporter << Metrix::FPM.new(fetch_resource(:fpm)) }
+          fetch_metrix(:system)         { reporter << Metrix::System.new(File.read("/proc/stat")) }
+          fetch_metrix(:load)           { reporter << Metrix::Load.new(File.read("/proc/loadavg")) }
+          fetch_metrix(:memory)         { reporter << Metrix::Memory.new(File.read("/proc/meminfo")) }
 
           fetch_metrix :processes do
             Metrix::ProcessMetric.all.each do |m|
