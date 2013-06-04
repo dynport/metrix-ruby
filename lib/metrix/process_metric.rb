@@ -10,10 +10,10 @@ module Metrix
 
     class << self
       def all
-        Dir.glob("/proc/*").select do |path|
-          File.directory?(path) && File.basename(path)[/^\d+$/]
-        end.map do |path|
-          Metrix::ProcessMetric.new(File.read(path + "/stat"))
+        IO.popen("find /proc -maxdepth 2 -mindepth 2 -name stat") do |io|
+          io.map do |path|
+            Metrix::ProcessMetric.new(File.read(path.strip))
+          end
         end
       end
     end
