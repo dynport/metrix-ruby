@@ -6,20 +6,26 @@ TODO: Write a gem description
 
 Add this line to your application's Gemfile:
 
-    gem 'metrix'
+    gem install 'metrix'
 
 ## Configuration
 
-    #/etc/metrix.tml
+    # in /etc/metrix.tml
+
+    # local metrics
+    load:           true
+    system:         true
+    processes:      true
+
+    # http metrics
     elasticsearch:  http://127.0.0.1:9200/_status
     mongodb:        http://127.0.0.1:28017/serverStatus
     fpm:            http://127.0.0.1:9001/fpm-status
     nginx:          http://127.0.0.1:8000/
+
+    # reporters
     opentsdb:       tcp://127.0.0.1:4242/
     graphite:       tcp://127.0.0.1:2003/
-    load:           true
-    system:         true
-    processes:      true
 
 ## Start
 
