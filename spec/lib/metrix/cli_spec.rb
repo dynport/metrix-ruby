@@ -4,6 +4,7 @@ require "metrix/cli"
 describe "Metrix::CLI" do
   subject(:cli) { Metrix::CLI.new([]) }
   it { should_not be_nil }
+  it { cli.logger.level.should eq(Logger::INFO) }
 
   it { cli.pid_path.should eq("/var/run/metrix.pid") }
 

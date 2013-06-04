@@ -20,6 +20,7 @@ module Metrix
       @interval = 10
       require "syslog/logger"
       Metrix.logger = Syslog::Logger.new("metrix")
+      Metrix.logger.level = Logger::INFO
     end
 
     def parse!
