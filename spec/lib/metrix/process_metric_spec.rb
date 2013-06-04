@@ -1,5 +1,5 @@
 require "spec_helper"
-require "metrix/process"
+require "metrix/process_metric"
 
 describe "Metrix::ProcessMetric" do
   let(:data) { FIXTURES_PATH.join("proc.26928.txt").read }
