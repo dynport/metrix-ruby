@@ -110,7 +110,6 @@ module Metrix
               reporter << m
             end
           end
-
           reporter.flush
         rescue SystemExit
           $running = false
@@ -135,7 +134,7 @@ module Metrix
     end
 
     def reporter
-      if attributes[:opentsdb]
+      @reporter ||= if attributes[:opentsdb]
         require "metrix/opentsdb"
         uri = URI.parse(attributes[:opentsdb])
         Metrix::OpenTSDB.new(uri.host, uri.port)
