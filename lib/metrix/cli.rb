@@ -4,6 +4,7 @@ require "metrix/mongodb"
 require "metrix/nginx"
 require "metrix/system"
 require "metrix/load"
+require "metrix/fpm"
 require "logger"
 
 module Metrix
@@ -46,6 +47,12 @@ module Metrix
           if nginx?
             fetch_metrix :nginx do
               reporter << Metrix::Nginx.new(nginx_status)
+            end
+          end
+
+          if fpm?
+            fetch_metrix :fpm do
+              reporter << Metrix::FPM.new(fpm_status)
             end
           end
 
@@ -99,6 +106,10 @@ module Metrix
       !!@mongodb
     end
 
+    def fpm?
+      !!@fpm
+    end
+
     def nginx?
       !!@nginx
     end
@@ -111,8 +122,11 @@ module Metrix
       get_url "http://127.0.0.1:28017/serverStatus"
     end
 
+    def fpm_status
+      get_url "http://127.0.0.1:9001/fpm-status"
+    end
+
     def nginx_status
-      Metrix.logger.info "fetching mongodb metrix"
       get_url "http://127.0.0.1:8000/"
     end
 
@@ -152,6 +166,10 @@ module Metrix
         o.on("-v", "--version") do
           puts "metrix #{Metrix::VERSION}"
           exit
+        end
+
+        o.on("--fpm") do
+          @fpm = true
         end
 
         o.on("--nginx") do
