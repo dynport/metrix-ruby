@@ -8,17 +8,30 @@ Add this line to your application's Gemfile:
 
     gem 'metrix'
 
-And then execute:
+## Configuration
 
-    $ bundle
+    #/etc/metrix.tml
+    elasticsearch:  http://127.0.0.1:9200/_status
+    mongodb:        http://127.0.0.1:28017/serverStatus
+    fpm:            http://127.0.0.1:9001/fpm-status
+    nginx:          http://127.0.0.1:8000/
+    opentsdb:       tcp://127.0.0.1:4242/
+    graphite:       tcp://127.0.0.1:2003/
+    load:           true
+    system:         true
+    processes:      true
 
-Or install it yourself as:
+## Start
 
-    $ gem install metrix
+    $ metrix start
 
-## Usage
+## Stop
 
-TODO: Write usage instructions here
+    $ metrix stop
+
+## Status
+
+    $ metrix status
 
 ## Contributing
 
