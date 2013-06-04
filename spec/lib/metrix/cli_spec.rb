@@ -29,6 +29,17 @@ describe "Metrix::CLI" do
     it { should_not be_allowed_to_run }
   end
 
+  describe "with graphite reporter" do
+    subject(:reporter) do
+      cli.attributes[:graphite] = "tcp://123.3.4.5:1212"
+      cli.reporter
+    end
+
+    it { should_not be_nil }
+    it { subject.host.should eq("123.3.4.5") }
+    it { subject.port.should eq(1212) }
+  end
+
   describe "initializing from config file" do
     let(:path) { FIXTURES_PATH.join("metrix.yml").to_s }
     subject(:cli) { Metrix::CLI.new(["-c", path, "configtest"]) }
@@ -44,12 +55,18 @@ describe "Metrix::CLI" do
     it { should be_enabled(:load) }
     it { should be_enabled(:processes) }
     it { subject.reporter.should be_kind_of(Metrix::OpenTSDB) }
-    it { subject.attributes[:opentsdb].should eq("some.host") }
+    it { subject.attributes[:opentsdb].should include("some.host") }
     it { subject.should_not be_enabled(:elasticsearch) }
     it { subject.url_for(:fpm).should_not be_nil }
     it { subject.should be_enabled(:fpm) }
     it { subject.should_not be_enabled(:mongodb) }
     it { subject.should be_daemonize }
+
+    describe "#reporter" do
+      subject(:reporter) { cli.reporter }
+      it { should_not be_nil }
+      it { subject.host.should eq("some.host") }
+    end
   end
 
   describe "with no parameters called" do

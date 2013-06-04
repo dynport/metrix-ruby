@@ -1,6 +1,6 @@
 system: true
 processes: true
 load: true
-opentsdb: <%= "some.host" %>
+opentsdb: tcp://<%= "some.host" %>:1234
 log_level: debug
 fpm: http://localhost:9001

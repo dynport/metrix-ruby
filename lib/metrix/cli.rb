@@ -133,7 +133,12 @@ module Metrix
     def reporter
       if attributes[:opentsdb]
         require "metrix/opentsdb"
-        Metrix::OpenTSDB.new(attributes[:opentsdb], 4242)
+        uri = URI.parse(attributes[:opentsdb])
+        Metrix::OpenTSDB.new(uri.host, uri.port)
+      elsif attributes[:graphite]
+        require "metrix/graphite"
+        uri = URI.parse(attributes[:graphite])
+        Metrix::Graphite.new(uri.host, uri.port)
       elsif @foreground == true
         require "metrix/reporter/stdout"
         Metrix::Reporter::Stdout.new
