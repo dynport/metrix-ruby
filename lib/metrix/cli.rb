@@ -38,9 +38,11 @@ module Metrix
         if File.exists?(pid_path)
           logger.debug "#{pid_path} exists"
           puts "STATUS: running with pid #{File.read(pid_path).strip}"
+          exit 0
         else
           logger.debug "#{pid_path} does not exist"
           puts "STATUS: not running"
+          exit 1
         end
       when "stop"
         abort "not running!" if !running?
