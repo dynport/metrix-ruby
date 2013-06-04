@@ -1,7 +1,7 @@
 require "metrix/base"
 
 module Metrix
-  class Process < Base
+  class ProcessMetric < Base
     attr_reader :time
 
     class << self
@@ -9,7 +9,7 @@ module Metrix
         Dir.glob("/proc/*").select do |path|
           File.directory?(path) && File.basename(path)[/^\d+$/]
         end.map do |path|
-          Metrix::Process.new(File.read(path + "/stat"))
+          Metrix::ProcessMetric.new(File.read(path + "/stat"))
         end
       end
     end

@@ -1,9 +1,9 @@
 require "spec_helper"
 require "metrix/process"
 
-describe "Metrix::Process" do
+describe "Metrix::ProcessMetric" do
   let(:data) { FIXTURES_PATH.join("proc.26928.txt").read }
-  subject(:process) { Metrix::Process.new(data) }
+  subject(:process) { Metrix::ProcessMetric.new(data) }
 
   it { should_not be_nil }
   it { subject.time.should be_kind_of(Time) }

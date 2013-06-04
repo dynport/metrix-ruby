@@ -113,7 +113,7 @@ module Metrix
 
           if processes?
             fetch_metrix :processes do
-              Metrix::Process.all.each do |m|
+              Metrix::ProcessMetric.all.each do |m|
                 reporter << m
               end
             end

@@ -4,7 +4,7 @@ require "metrix/opentsdb"
 describe "Metrix::OpenTSDB" do
   let(:data) { FIXTURES_PATH.join("proc.26928.txt").read }
   subject(:client) { Metrix::OpenTSDB.new("127.0.0.1", 1234) }
-  let(:metric) { Metrix::Process.new(data) }
+  let(:metric) { Metrix::ProcessMetric.new(data) }
 
   it { should_not be_nil }
 

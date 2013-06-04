@@ -3,7 +3,7 @@ require "metrix/graphite"
 
 describe "Metrix::Graphite" do
   let(:data) { FIXTURES_PATH.join("proc.26928.txt").read }
-  let(:metric) { Metrix::Process.new(data, Time.at(1370091027)) }
+  let(:metric) { Metrix::ProcessMetric.new(data, Time.at(1370091027)) }
   subject(:client) { Metrix::Graphite.new("128.0.0.1") }
 
   it { should_not be_nil }
