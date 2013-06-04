@@ -5,12 +5,14 @@ require "metrix/nginx"
 require "metrix/system"
 require "metrix/load"
 require "metrix/fpm"
+require "metrix/process"
+require "metrix/load"
 require "logger"
 require "fileutils"
 
 module Metrix
   class CLI
-    attr_reader :reporter, :elastic_search_host, :mongodb_host, :interval
+    attr_reader :interval
 
     def initialize(args)
       @args = args
@@ -20,20 +22,32 @@ module Metrix
       Metrix.logger = Syslog::Logger.new("metrix")
     end
 
+    def parse!
+      @action = opts.parse(@args).first
+    end
+
+    def action
+      @action ||= parse!
+    end
+
     def run
-      Metrix.logger.level = log_level
-      action = opts.parse(@args).first
-      case action
+      parse!
+      load_configs_from_file!
+      case @action
       when "start"
         if running?
           logger.warn "refuse to run. seems that #{pid_path} exists!"
           abort "not allowed to run" if running?
         end
-        pid = Process.fork do
+        if daemonize?
+          pid = Process.fork do
+            start
+          end
+          sleep 1
+          Process.detach(pid)
+        else
           start
         end
-        sleep 1
-        Process.detach(pid)
       when "status"
         if File.exists?(pid_path)
           logger.debug "#{pid_path} exists"
@@ -50,6 +64,8 @@ module Metrix
         logger.info "killing pid #{pid}"
         system "kill #{pid}"
         puts "killed #{pid}"
+      when "configtest"
+        puts "running configtest #{attributes.inspect}"
       else
         logger.warn "action #{action} unknown!"
         abort "action #{action} unknown!"
@@ -78,46 +94,19 @@ module Metrix
         begin
           cnt += 1
           now = Time.now.utc
-          if elastic_search?
-            fetch_metrix :elastic_search do
-              reporter << Metrix::ElasticSearch.new(elastic_search_status)
+          fetch_metrix(:elasticsearch) { reporter << Metrix::ElasticSearch.new(fetch_resource(:elasticsearch)) }
+          fetch_metrix(:mongodb)       { reporter << Metrix::Mongodb.new(fetch_resource(:mongodb)) }
+          fetch_metrix(:nginx)         { reporter << Metrix::Nginx.new(fetch_resource(:nginx)) }
+          fetch_metrix(:fpm)           { reporter << Metrix::FPM.new(fetch_resource(:fpm)) }
+          fetch_metrix(:system)        { reporter << Metrix::System.new(File.read("/proc/stat")) }
+          fetch_metrix(:load)          { reporter << Metrix::Load.new(File.read("/proc/loadavg")) }
+
+          fetch_metrix :processes do
+            Metrix::ProcessMetric.all.each do |m|
+              reporter << m
             end
           end
 
-          if mongodb?
-            fetch_metrix :mongodb do
-              reporter << Metrix::Mongodb.new(mongodb_status)
-            end
-          end
-
-          if nginx?
-            fetch_metrix :nginx do
-              reporter << Metrix::Nginx.new(nginx_status)
-            end
-          end
-
-          if fpm?
-            fetch_metrix :fpm do
-              reporter << Metrix::FPM.new(fpm_status)
-            end
-          end
-
-          if system?
-            fetch_metrix :system do
-              reporter << Metrix::System.new(File.read("/proc/stat"))
-            end
-            fetch_metrix :load do
-              reporter << Metrix::Load.new(File.read("/proc/loadavg"))
-            end
-          end
-
-          if processes?
-            fetch_metrix :processes do
-              Metrix::ProcessMetric.all.each do |m|
-                reporter << m
-              end
-            end
-          end
           reporter.flush
         rescue SystemExit
           $running = false
@@ -125,16 +114,30 @@ module Metrix
           Metrix.logger.error "#{err.message}"
           Metrix.logger.error "#{err.backtrace.inspect}"
         ensure
-          sleep_for = @interval - (Time.now - started - cnt * interval)
-          if sleep_for > 0
-            Metrix.logger.info "finished run in %.06f, sleeping for %.06f" % [Time.now - now, sleep_for]
-            sleep sleep_for
-          else
-            Metrix.logger.info "not sleeping because %.06f is negative" % [sleep_for]
+          begin
+            sleep_for = @interval - (Time.now - started - cnt * interval)
+            if sleep_for > 0
+              Metrix.logger.info "finished run in %.06f, sleeping for %.06f" % [Time.now - now, sleep_for]
+              sleep sleep_for
+            else
+              Metrix.logger.info "not sleeping because %.06f is negative" % [sleep_for]
+            end
+          rescue SystemExit, Interrupt
+            $running = false
           end
         end
       end
       delete_pidfile!
+    end
+
+    def reporter
+      if attributes[:opentsdb]
+        require "metrix/opentsdb"
+        Metrix::OpenTSDB.new(attributes[:opentsdb], 4242)
+      elsif @foreground == true
+        require "metrix/reporter/stdout"
+        Metrix::Reporter::Stdout.new
+      end
     end
 
     def write_pidfile!(pid)
@@ -154,44 +157,20 @@ module Metrix
       File.exists?(pid_path)
     end
 
-    def log_level
-      @log_level || Logger::INFO
+    def enabled?(key)
+      !!attributes[key]
     end
 
-    def processes?
-      !!@processes
+    def elasticsearch_status
+      get_url url_for(:elasticsearch)
     end
 
-    def elastic_search?
-      !!@elastic_search
+    def fetch_resource(key)
+      get_url(url_for(key))
     end
 
-    def mongodb?
-      !!@mongodb
-    end
-
-    def fpm?
-      !!@fpm
-    end
-
-    def nginx?
-      !!@nginx
-    end
-
-    def elastic_search_status
-      get_url "http://127.0.0.1:9200/_status"
-    end
-
-    def mongodb_status
-      get_url "http://127.0.0.1:28017/serverStatus"
-    end
-
-    def fpm_status
-      get_url "http://127.0.0.1:9001/fpm-status"
-    end
-
-    def nginx_status
-      get_url "http://127.0.0.1:8000/"
+    def url_for(key)
+      attributes[key]
     end
 
     def get_url(url)
@@ -203,6 +182,7 @@ module Metrix
     end
 
     def fetch_metrix(type)
+      return false if !enabled?(type)
       started = Time.now
       logger.info "fetching metrix for #{type}"
       yield
@@ -215,13 +195,35 @@ module Metrix
       Metrix.logger
     end
 
-    def system?
-      !!@system
-    end
-
     def log_to_stdout
       Metrix.logger = Logger.new(STDOUT)
       Metrix.logger.level = Logger::INFO
+    end
+
+    def daemonize?
+      @foreground != true
+    end
+
+    def attributes
+      @attributes ||= {}
+    end
+
+    def load_configs_from_file!
+      require "erb"
+      require "yaml"
+      hash = YAML.load(ERB.new(File.read(config_path)).result)
+      @attributes = hash.inject({}) do |hash, (k, v)|
+        hash[k.to_sym] = v
+        hash
+      end
+    end
+
+    def config_path
+      @config_path || default_config_path
+    end
+
+    def default_config_path
+      File.expand_path("/etc/metrix.yml")
     end
 
     def opts
@@ -232,53 +234,14 @@ module Metrix
           exit
         end
 
-        o.on("--fpm") do
-          @fpm = true
+        o.on("-c PATH") do |value|
+          @config_path = value
         end
 
-        o.on("--nginx") do
-          @nginx = true
-        end
-
-        o.on("--mongodb") do
-          @mongodb = true
-        end
-
-        o.on("--elasticsearch") do
-          @elastic_search = true
-        end
-
-        o.on("--graphite-host HOST") do |value|
-          require "metrix/graphite"
-          @reporter = Metrix::Graphite.new(value, 2003)
-        end
-
-        o.on("--opentsdb-host HOST") do |value|
-          require "metrix/opentsdb"
-          @reporter = Metrix::OpenTSDB.new(value, 4242)
-        end
-
-        o.on("--stdout") do
-          require "metrix/reporter/stdout"
-          @reporter = Metrix::Reporter::Stdout.new
-        end
-
-        o.on("--debug") do
-          @log_level = Logger::DEBUG
-        end
-
-        o.on("--no-syslog") do
+        o.on("-d", "--debug") do |value|
+          @foreground = true
           log_to_stdout
-        end
-
-        o.on("--processes") do
-          require "metrix/process"
-          @processes = true
-        end
-
-        o.on("--system") do
-          require "metrix/system"
-          @system = true
+          Metrix.logger.level = Logger::DEBUG
         end
       end
     end

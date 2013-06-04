@@ -1,0 +1,6 @@
+system: true
+processes: true
+load: true
+opentsdb: <%= "some.host" %>
+log_level: debug
+fpm: http://localhost:9001

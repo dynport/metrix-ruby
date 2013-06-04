@@ -1,7 +1,7 @@
 require "spec_helper"
 require "metrix/fpm"
 
-describe "Metrix::FPM", :wip do
+describe "Metrix::FPM" do
   let(:data) { FIXTURES_PATH.join("php.fpm.status.txt").read }
   subject(:fpm) { Metrix::FPM.new(data) }
   it { should_not be_nil }

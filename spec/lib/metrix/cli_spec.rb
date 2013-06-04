@@ -1,7 +1,7 @@
 require "spec_helper"
 require "metrix/cli"
 
-describe "Metrix::CLI", :wip do
+describe "Metrix::CLI" do
   subject(:cli) { Metrix::CLI.new([]) }
   it { should_not be_nil }
 
@@ -27,5 +27,44 @@ describe "Metrix::CLI", :wip do
     end
 
     it { should_not be_allowed_to_run }
+  end
+
+  describe "initializing from config file" do
+    let(:path) { FIXTURES_PATH.join("metrix.yml").to_s }
+    subject(:cli) { Metrix::CLI.new(["-c", path, "configtest"]) }
+
+    before do
+      cli.stub(:puts)
+      cli.run
+    end
+
+    it { cli.config_path.should eq(path) }
+    it { should_not be_nil }
+    it { should be_enabled(:system) }
+    it { should be_enabled(:load) }
+    it { should be_enabled(:processes) }
+    it { subject.reporter.should be_kind_of(Metrix::OpenTSDB) }
+    it { subject.attributes[:opentsdb].should eq("some.host") }
+    it { subject.should_not be_enabled(:elasticsearch) }
+    it { subject.url_for(:fpm).should_not be_nil }
+    it { subject.should be_enabled(:fpm) }
+    it { subject.should_not be_enabled(:mongodb) }
+    it { subject.should be_daemonize }
+  end
+
+  describe "with no parameters called" do
+    subject(:cli) { Metrix::CLI.new([]) }
+    it { should_not be_nil }
+    it { cli.config_path.should eq("/etc/metrix.yml") }
+  end
+
+  describe "running in forground" do
+    subject(:cli) { Metrix::CLI.new(["--debug"]) }
+    before do
+      cli.parse!
+    end
+    it { should_not be_nil }
+    it { subject.reporter.should_not be_nil }
+    it { cli.config_path.should eq("/etc/metrix.yml") }
   end
 end
