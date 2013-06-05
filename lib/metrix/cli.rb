@@ -126,7 +126,7 @@ module Metrix
           begin
             sleep_for = @interval - (Time.now - started - cnt * interval)
             if sleep_for > 0
-              Metrix.logger.info "finished run in %.06f, sleeping for %.06f" % [Time.now - now, sleep_for]
+              Metrix.logger.info "finished run in %.06f, sleeping for %.06f. metrix version: #{Metrix::VERSION}, attributes: #{attributes}" % [Time.now - now, sleep_for]
               sleep sleep_for
             else
               Metrix.logger.info "not sleeping because %.06f is negative" % [sleep_for]
