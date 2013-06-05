@@ -6,6 +6,7 @@ require "metrix/system"
 require "metrix/load"
 require "metrix/memory"
 require "metrix/diskstats"
+require "metrix/df"
 require "metrix/fpm"
 require "metrix/process_metric"
 require "metrix/load"
@@ -108,6 +109,7 @@ module Metrix
           fetch_metrix(:load)           { reporter << Metrix::Load.new(File.read("/proc/loadavg")) }
           fetch_metrix(:memory)         { reporter << Metrix::Memory.new(File.read("/proc/meminfo")) }
           fetch_metrix(:diskstats)      { reporter << Metrix::Diskstats.new(File.read("/proc/diskstats")) }
+          fetch_metrix(:df)             { reporter << Metrix::Df.new(`df -k`) }
 
           fetch_metrix :processes do
             Metrix::ProcessMetric.all.each do |m|
