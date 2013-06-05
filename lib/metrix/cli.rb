@@ -12,6 +12,7 @@ require "metrix/process_metric"
 require "metrix/load"
 require "logger"
 require "fileutils"
+require "timeout"
 
 module Metrix
   class CLI
@@ -188,11 +189,13 @@ module Metrix
     end
 
     def get_url(url)
-      logger.info "fetching URL #{url}"
-      started = Time.now
-      body = Net::HTTP.get(URI(url))
-      logger.info "fetched URL #{url} in %.06f" % [Time.now - started]
-      body
+      Timeout.timeout(1) do
+        logger.info "fetching URL #{url}"
+        started = Time.now
+        body = Net::HTTP.get(URI(url))
+        logger.info "fetched URL #{url} in %.06f" % [Time.now - started]
+        body
+      end
     end
 
     def fetch_metrix(type)

@@ -1,4 +1,5 @@
 require "socket"
+require "timeout"
 
 module Metrix
   class OpenTSDB
@@ -20,11 +21,14 @@ module Metrix
     end
 
     def flush
-      return if buffers.empty?
-      Metrix.logger.info "sending #{buffers.count} to #{@host}:#{@port}"
-      Socket.tcp(@host, @port) do |socket|
-        socket.puts buffers.join("\n")
+      Timeout.timeout(1) do
+        return if buffers.empty?
+        Metrix.logger.info "sending #{buffers.count} to #{@host}:#{@port}"
+        Socket.tcp(@host, @port) do |socket|
+          socket.puts buffers.join("\n")
+        end
       end
+    ensure
       buffers.clear
     end
 

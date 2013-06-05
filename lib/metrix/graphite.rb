@@ -23,15 +23,18 @@ module Metrix
     end
 
     def flush
-      if buffers.empty?
-        logger.info "nothing to send"
-        return
+      Timeout.timeout(1) do
+        if buffers.empty?
+          logger.info "nothing to send"
+          return
+        end
+        started = Time.now
+        Socket.tcp(@host, @port) do |socket|
+          socket.puts(buffers.join("\n"))
+        end
+        logger.info "sent #{buffers.count} in %.06fs" % [Time.now - started]
       end
-      started = Time.now
-      Socket.tcp(@host, @port) do |socket|
-        socket.puts(buffers.join("\n"))
-      end
-      logger.info "sent #{buffers.count} in %.06fs" % [Time.now - started]
+    ensure
       buffers.clear
     end
 
