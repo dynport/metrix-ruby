@@ -19,7 +19,11 @@ module Metrix
     end
 
     def name
-      comm.gsub(/^\(/, "").gsub(/\)$/, "")
+      normalize_name(comm)
+    end
+
+    def normalize_name(the_name)
+      the_name.gsub(/^\(/, "").gsub(/\)$/, "").gsub(/[^\w]+/i, "_")
     end
 
     def chunks

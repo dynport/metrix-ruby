@@ -13,6 +13,24 @@ describe "Metrix::ProcessMetric" do
   it { subject.utime.should eq(32337) }
   it { subject.stime.should eq(34740) }
 
+  describe "#normalize_name", :wip do
+    {
+      "kworker/0:0H" => "kworker_0_0H",
+      "(java)" => "java"
+    }.each do |from, to|
+      it "normalized #{from.inspect} to #{to.inspect}" do
+        subject.normalize_name(from).should eq(to)
+      end
+    end
+  end
+
+  describe "with crazy characters", :wip do
+    let(:data) { FIXTURES_PATH.join("proc.5.txt").read }
+    subject(:process) { Metrix::ProcessMetric.new(data) }
+
+    it { subject.name.should eq("kworker_0_0H") }
+  end
+
   describe "#metrics" do
     subject(:metrics) do
       hash_metrics(process.metrics)
