@@ -1,45 +1,21 @@
 require "socket"
 require "metrix"
+require "metrix/tcp_reporter"
 
 module Metrix
-  class Graphite
+  class Graphite < TcpReporter
     attr_reader :host, :port
 
     def initialize(host, port = 2003)
-      @host = host
-      @port = port
+      super(host, port, 100)
     end
 
-    def <<(metric)
-      metric.metrics.each do |m|
-        logger.debug "adding #{m.to_graphite}"
-        buffers << m.to_graphite
-        flush if buffers.count > 90
-      end
+    def window_size
+      90
     end
 
-    def buffers
-      @buffers ||= []
-    end
-
-    def flush
-      Timeout.timeout(1) do
-        if buffers.empty?
-          logger.info "nothing to send"
-          return
-        end
-        started = Time.now
-        Socket.tcp(@host, @port) do |socket|
-          socket.puts(buffers.join("\n"))
-        end
-        logger.info "sent #{buffers.count} in %.06fs" % [Time.now - started]
-      end
-    ensure
-      buffers.clear
-    end
-
-    def logger
-      Metrix.logger
+    def serialize_metric(m)
+      m.to_graphite
     end
   end
 end
